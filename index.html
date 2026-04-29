@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SplitChain — Trustless Expense Sharing</title>
+
+<!-- Load ethers.js from CDN (no local file needed) -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #060a10;
+    --surface: #0d1520;
+    --surface2: #111d2e;
+    --border: rgba(0, 245, 180, 0.12);
+    --accent: #00f5b4;
+    --accent2: #0098ff;
+    --warn: #ff4d6d;
+    --text: #e2f0ff;
+    --muted: #4a6080;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,245,180,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,180,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .blob1 { width: 400px; height: 400px; background: rgba(0,245,180,0.07); top: -100px; left: -100px; }
+  .blob2 { width: 350px; height: 350px; background: rgba(0,152,255,0.07); bottom: -100px; right: -100px; }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+    animation: fadeDown 0.6s ease both;
+  }
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2.4rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+  }
+  .logo-mark svg { flex-shrink: 0; }
+  header p {
+    margin-top: 8px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .wallet-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 20px;
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+  #wallet-info {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  #wallet-info.connected { color: var(--accent); }
+  .dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    margin-right: 8px;
+    transition: background 0.3s;
+  }
+  .dot.live { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s infinite; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 20px;
+    transition: border-color 0.3s, transform 0.2s;
+    animation: fadeUp 0.6s ease both;
+  }
+  .card:hover { border-color: rgba(0,245,180,0.25); transform: translateY(-2px); }
+  .card:nth-child(2) { animation-delay: 0.15s; }
+  .card:nth-child(3) { animation-delay: 0.25s; }
+  .card:nth-child(4) { animation-delay: 0.35s; }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .card-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .card-icon.green { background: rgba(0,245,180,0.1); }
+  .card-icon.blue  { background: rgba(0,152,255,0.1); }
+  .card-icon.red   { background: rgba(255,77,109,0.1); }
+
+  .card-title { font-size: 1rem; font-weight: 600; letter-spacing: 0.3px; }
+  .card-sub {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .field { margin-bottom: 14px; }
+  label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+  }
+  input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,245,180,0.08);
+  }
+  input::placeholder { color: var(--muted); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    border-radius: 10px;
+    border: none;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.2px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #00c490);
+    color: #060a10;
+    width: 100%;
+    justify-content: center;
+  }
+  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,245,180,0.25); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .btn-secondary {
+    background: linear-gradient(135deg, var(--accent2), #0070cc);
+    color: white;
+    width: 100%;
+    justify-content: center;
+  }
+  .btn-secondary:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,152,255,0.25); }
+  .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .btn-danger {
+    background: linear-gradient(135deg, var(--warn), #cc2244);
+    color: white;
+    width: 100%;
+    justify-content: center;
+  }
+  .btn-danger:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(255,77,109,0.25); }
+  .btn-danger:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .btn-connect {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 18px;
+    font-size: 0.82rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .btn-connect:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-connect.connected { border-color: var(--accent); color: var(--accent); }
+
+  .chain-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,152,255,0.1);
+    border: 1px solid rgba(0,152,255,0.2);
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--accent2);
+  }
+
+  .result-box {
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    display: none;
+  }
+  .result-box.show { display: block; animation: fadeUp 0.3s ease; }
+  .result-box.positive { border-color: rgba(0,245,180,0.3); color: var(--accent); }
+  .result-box.negative { border-color: rgba(255,77,109,0.3); color: var(--warn); }
+
+  .tx-link {
+    display: block;
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    word-break: break-all;
+  }
+  .tx-link a { color: var(--accent2); text-decoration: none; }
+  .tx-link a:hover { text-decoration: underline; }
+
+  #toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--text);
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+    z-index: 100;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.success { border-color: rgba(0,245,180,0.4); color: var(--accent); }
+  #toast.error   { border-color: rgba(255,77,109,0.4); color: var(--warn); }
+  #toast.loading { border-color: rgba(0,152,255,0.4); color: var(--accent2); }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+
+<div class="wrap">
+
+  <header>
+    <div class="logo-mark">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <path d="M16 2L28 8V16C28 22.627 22.627 28 16 28C9.373 28 4 22.627 4 16V8L16 2Z" fill="url(#g1)" opacity="0.2"/>
+        <path d="M16 2L28 8V16C28 22.627 22.627 28 16 28C9.373 28 4 22.627 4 16V8L16 2Z" stroke="url(#g1)" stroke-width="1.5"/>
+        <path d="M10 16H22M10 12H22M14 20H18" stroke="url(#g1)" stroke-width="1.5" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="g1" x1="4" y1="2" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#00f5b4"/>
+            <stop offset="1" stop-color="#0098ff"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      SplitChain
+    </div>
+    <p>Trustless · On-chain · Permissionless</p>
+  </header>
+
+  <div class="wallet-bar">
+    <div>
+      <span class="dot" id="dot"></span>
+      <span id="wallet-info">No wallet connected</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="chain-badge" id="chainBadge">⬡ —</span>
+      <button class="btn btn-connect" id="connectBtn" onclick="connectWallet()">Connect</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon green">💸</div>
+      <div>
+        <div class="card-title">Add Expense</div>
+        <div class="card-sub">Split ETH between participants</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Participant Addresses (comma separated)</label>
+      <input id="participants" placeholder="0xAbc..., 0xDef...">
+    </div>
+    <div class="field">
+      <label>ETH Amount</label>
+      <input id="amount" type="number" step="0.0001" min="0" placeholder="0.01">
+    </div>
+    <button class="btn btn-primary" onclick="addExpense()" id="addBtn">
+      <span>Add Expense</span>
+    </button>
+    <div class="tx-link" id="txLinkAdd"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon blue">📊</div>
+      <div>
+        <div class="card-title">Check Balance</div>
+        <div class="card-sub">View owed or receivable ETH</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Wallet Address</label>
+      <input id="userAddress" placeholder="0x...">
+    </div>
+    <button class="btn btn-secondary" onclick="checkBalance()" id="balBtn">Check Balance</button>
+    <div class="result-box" id="balanceResult"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon red">⚡</div>
+      <div>
+        <div class="card-title">Settle Payment</div>
+        <div class="card-sub">Pay what you owe on-chain</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>ETH Amount to Pay</label>
+      <input id="settleAmount" type="number" step="0.0001" min="0" placeholder="0.00">
+    </div>
+    <button class="btn btn-danger" onclick="settle()" id="settleBtn">
+      <span>Settle Now</span>
+    </button>
+    <div class="tx-link" id="txLinkSettle"></div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  CONTRACT CONFIG — already set for you!
+// ═══════════════════════════════════════════════
+const CONTRACT_ADDRESS = "0xfd0842dee0ec43dfbf9570fddb01b193c2082b52";
+
+const ABI = [
+  "function addExpense(address[] memory participants) payable",
+  "function getBalance(address user) view returns (int)",
+  "function settle() payable"
+];
+
+const EXPLORERS = {
+  1:        "https://etherscan.io",
+  5:        "https://goerli.etherscan.io",
+  11155111: "https://sepolia.etherscan.io",
+  137:      "https://polygonscan.com",
+  80001:    "https://mumbai.polygonscan.com",
+  8453:     "https://basescan.org"
+};
+
+// ═══════════════════════════════════════════════
+
+let provider, signer, contract;
+window._chainId = 11155111; // default Sepolia
+
+// ── Toast ──
+let toastTimer;
+function toast(msg, type = "loading") {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  if (type !== "loading") toastTimer = setTimeout(() => el.className = "", 3500);
+}
+
+function explorerUrl(hash) {
+  const base = EXPLORERS[window._chainId] || "https://etherscan.io";
+  return `${base}/tx/${hash}`;
+}
+
+function txLink(elId, hash) {
+  const url = explorerUrl(hash);
+  document.getElementById(elId).innerHTML =
+    `<a href="${url}" target="_blank" rel="noopener">↗ View on explorer: ${hash.slice(0,18)}...</a>`;
+}
+
+// ── Kill ENS on provider ──
+function patchENS(p) {
+  p.resolveName = async (name) => {
+    if (ethers.utils.isAddress(name)) return ethers.utils.getAddress(name);
+    throw new Error("ENS not supported — use a 0x address");
+  };
+  p.lookupAddress = async () => null;
+  p.getResolver   = async () => null;
+  return p;
+}
+
+// ── Connect Wallet ──
+async function connectWallet() {
+  try {
+    if (!window.ethereum) {
+      toast("⚠ Install MetaMask first", "error"); return;
+    }
+    // "any" prevents ethers making assumptions about ENS support
+    provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+    patchENS(provider);
+
+    await provider.send("eth_requestAccounts", []);
+    signer = provider.getSigner();
+    signer.resolveName = provider.resolveName;
+
+    const address = await signer.getAddress();
+    const network = await provider.getNetwork();
+    window._chainId = network.chainId;
+
+    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+    patchENS(contract.provider);
+
+    const short = address.slice(0,6) + "..." + address.slice(-4);
+    const CHAIN_NAMES = { 1:"Ethereum", 5:"Goerli", 11155111:"Sepolia", 137:"Polygon", 80001:"Mumbai", 8453:"Base" };
+
+    document.getElementById("wallet-info").textContent = short;
+    document.getElementById("wallet-info").className = "connected";
+    document.getElementById("dot").className = "dot live";
+    document.getElementById("connectBtn").textContent = "Connected";
+    document.getElementById("connectBtn").className = "btn btn-connect connected";
+    document.getElementById("chainBadge").textContent = "⬡ " + (CHAIN_NAMES[network.chainId] || `Chain ${network.chainId}`);
+
+    toast("✓ Wallet connected", "success");
+
+    window.ethereum.on("accountsChanged", () => location.reload());
+    window.ethereum.on("chainChanged",    () => location.reload());
+
+  } catch (err) {
+    console.error(err);
+    toast("✗ " + (err.message || "Connection failed").slice(0, 60), "error");
+  }
+}
+
+// ── Guard ──
+function requireWallet() {
+  if (!contract) { toast("⚠ Connect wallet first", "error"); return false; }
+  return true;
+}
+
+// ── Add Expense ──
+async function addExpense() {
+  if (!requireWallet()) return;
+
+  const raw    = document.getElementById("participants").value.trim();
+  const amount = document.getElementById("amount").value.trim();
+
+  if (!raw)   return toast("⚠ Enter at least one address", "error");
+  if (!amount || parseFloat(amount) <= 0) return toast("⚠ Enter a valid ETH amount", "error");
+
+  // Parse + checksum every address
+  const addrs = raw.split(",").map(a => a.trim()).filter(Boolean);
+  const checksummed = [];
+  for (const a of addrs) {
+    if (!ethers.utils.isAddress(a)) {
+      toast(`✗ Bad address: ${a.slice(0,12)}...`, "error"); return;
+    }
+    checksummed.push(ethers.utils.getAddress(a));
+  }
+
+  const btn = document.getElementById("addBtn");
+  btn.innerHTML = `<span class="spinner"></span> Confirm in MetaMask...`;
+  btn.disabled = true;
+
+  try {
+    toast("⏳ Confirm in wallet...", "loading");
+
+    const tx = await contract.addExpense(checksummed, {
+      value: ethers.utils.parseEther(amount)
+    });
+
+    toast("⏳ Mining...", "loading");
+    const receipt = await tx.wait();
+
+    txLink("txLinkAdd", receipt.transactionHash);
+    toast("✓ Expense added on-chain!", "success");
+    document.getElementById("participants").value = "";
+    document.getElementById("amount").value = "";
+
+  } catch (err) {
+    console.error(err);
+    toast("✗ " + (err?.reason || err?.message || "Failed").slice(0, 60), "error");
+  } finally {
+    btn.innerHTML = "<span>Add Expense</span>";
+    btn.disabled = false;
+  }
+}
+
+// ── Check Balance ──
+async function checkBalance() {
+  if (!requireWallet()) return;
+
+  const raw = document.getElementById("userAddress").value.trim();
+  if (!raw) return toast("⚠ Enter an address", "error");
+  if (!ethers.utils.isAddress(raw)) return toast("✗ Invalid address", "error");
+
+  const addr = ethers.utils.getAddress(raw); // checksum
+  const box  = document.getElementById("balanceResult");
+  const btn  = document.getElementById("balBtn");
+
+  btn.innerHTML = `<span class="spinner"></span> Querying...`;
+  btn.disabled = true;
+
+  try {
+    toast("⏳ Reading contract...", "loading");
+
+    const bal    = await contract.getBalance(addr);
+    // Signed int from Solidity — handle two's complement correctly
+    const isNeg  = bal.isNegative ? bal.isNegative() : bal.lt(0);
+    const absWei = isNeg ? bal.mul(-1) : bal;
+    const ethAmt = parseFloat(ethers.utils.formatEther(absWei));
+
+    box.className = `result-box show ${isNeg ? "negative" : "positive"}`;
+    box.innerHTML = isNeg
+      ? `💸 Owes: <strong>${ethAmt.toFixed(6)} ETH</strong>`
+      : `💰 Gets back: <strong>${ethAmt.toFixed(6)} ETH</strong>`;
+
+    document.getElementById("toast").className = "";
+
+  } catch (err) {
+    console.error(err);
+    box.className = "result-box show negative";
+    box.textContent = "✗ Could not fetch balance";
+    toast("✗ Query failed", "error");
+  } finally {
+    btn.innerHTML = "Check Balance";
+    btn.disabled = false;
+  }
+}
+
+// ── Settle ──
+async function settle() {
+  if (!requireWallet()) return;
+
+  const amt = document.getElementById("settleAmount").value.trim();
+  if (!amt || parseFloat(amt) <= 0) return toast("⚠ Enter a valid ETH amount", "error");
+
+  const btn = document.getElementById("settleBtn");
+  btn.innerHTML = `<span class="spinner"></span> Confirm in MetaMask...`;
+  btn.disabled = true;
+
+  try {
+    toast("⏳ Confirm in wallet...", "loading");
+
+    const tx = await contract.settle({
+      value: ethers.utils.parseEther(amt)
+    });
+
+    toast("⏳ Mining...", "loading");
+    const receipt = await tx.wait();
+
+    txLink("txLinkSettle", receipt.transactionHash);
+    toast("✓ Payment settled!", "success");
+    document.getElementById("settleAmount").value = "";
+
+  } catch (err) {
+    console.error(err);
+    toast("✗ " + (err?.reason || err?.message || "Failed").slice(0, 60), "error");
+  } finally {
+    btn.innerHTML = "<span>Settle Now</span>";
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
