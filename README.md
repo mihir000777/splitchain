@@ -10,7 +10,7 @@
 ---
 
 ## 🌐 Live Demo
-🔗 **[splitchain.github.io/splitchain](https://splitchain.github.io/splitchain)**
+🔗 **[splitchain.github.io/splitchain](https://mihir000777.github.io/splitchain/)**
 
 > Connect MetaMask on **Sepolia testnet** to interact with the live contract.
 
