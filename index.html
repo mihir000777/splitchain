@@ -4,10 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SplitChain — Trustless Expense Sharing</title>
-
-<!-- Load ethers.js from CDN (no local file needed) -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
 
 <style>
@@ -19,6 +16,7 @@
     --accent: #00f5b4;
     --accent2: #0098ff;
     --warn: #ff4d6d;
+    --gold: #f59e0b;
     --text: #e2f0ff;
     --muted: #4a6080;
     --mono: 'Space Mono', monospace;
@@ -48,282 +46,165 @@
   }
 
   .blob {
-    position: fixed;
-    border-radius: 50%;
-    filter: blur(120px);
-    pointer-events: none;
-    z-index: 0;
+    position: fixed; border-radius: 50%;
+    filter: blur(120px); pointer-events: none; z-index: 0;
   }
-  .blob1 { width: 400px; height: 400px; background: rgba(0,245,180,0.07); top: -100px; left: -100px; }
-  .blob2 { width: 350px; height: 350px; background: rgba(0,152,255,0.07); bottom: -100px; right: -100px; }
+  .blob1 { width:400px; height:400px; background:rgba(0,245,180,0.07); top:-100px; left:-100px; }
+  .blob2 { width:350px; height:350px; background:rgba(0,152,255,0.07); bottom:-100px; right:-100px; }
 
   .wrap {
-    position: relative;
-    z-index: 1;
-    max-width: 560px;
-    margin: 0 auto;
+    position: relative; z-index: 1;
+    max-width: 560px; margin: 0 auto;
     padding: 40px 20px 80px;
   }
 
   header {
-    text-align: center;
-    margin-bottom: 48px;
+    text-align: center; margin-bottom: 48px;
     animation: fadeDown 0.6s ease both;
   }
   .logo-mark {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
+    display: inline-flex; align-items: center; gap: 10px;
     background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-size: 2.4rem;
-    font-weight: 800;
-    letter-spacing: -1px;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    font-size: 2.4rem; font-weight: 800; letter-spacing: -1px;
   }
-  .logo-mark svg { flex-shrink: 0; }
   header p {
-    margin-top: 8px;
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 0.75rem;
-    letter-spacing: 3px;
-    text-transform: uppercase;
+    margin-top: 8px; color: var(--muted);
+    font-family: var(--mono); font-size: 0.75rem;
+    letter-spacing: 3px; text-transform: uppercase;
   }
 
   .wallet-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 14px 20px;
-    margin-bottom: 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 20px; margin-bottom: 24px;
     animation: fadeUp 0.6s 0.1s ease both;
   }
-  #wallet-info {
-    font-family: var(--mono);
-    font-size: 0.78rem;
-    color: var(--muted);
-  }
+  #wallet-info { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); }
   #wallet-info.connected { color: var(--accent); }
   .dot {
-    display: inline-block;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--muted);
-    margin-right: 8px;
-    transition: background 0.3s;
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--muted);
+    margin-right: 8px; transition: background 0.3s;
   }
   .dot.live { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s infinite; }
 
   .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 28px;
-    margin-bottom: 20px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px; margin-bottom: 20px;
     transition: border-color 0.3s, transform 0.2s;
     animation: fadeUp 0.6s ease both;
   }
   .card:hover { border-color: rgba(0,245,180,0.25); transform: translateY(-2px); }
-  .card:nth-child(2) { animation-delay: 0.15s; }
-  .card:nth-child(3) { animation-delay: 0.25s; }
-  .card:nth-child(4) { animation-delay: 0.35s; }
+  .card:nth-child(2) { animation-delay: 0.1s; }
+  .card:nth-child(3) { animation-delay: 0.2s; }
+  .card:nth-child(4) { animation-delay: 0.3s; }
+  .card:nth-child(5) { animation-delay: 0.4s; }
 
-  .card-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 22px;
-  }
+  .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
   .card-icon {
-    width: 38px; height: 38px;
-    border-radius: 10px;
+    width: 38px; height: 38px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem;
-    flex-shrink: 0;
+    font-size: 1.1rem; flex-shrink: 0;
   }
-  .card-icon.green { background: rgba(0,245,180,0.1); }
-  .card-icon.blue  { background: rgba(0,152,255,0.1); }
-  .card-icon.red   { background: rgba(255,77,109,0.1); }
+  .card-icon.green  { background: rgba(0,245,180,0.1); }
+  .card-icon.blue   { background: rgba(0,152,255,0.1); }
+  .card-icon.red    { background: rgba(255,77,109,0.1); }
+  .card-icon.gold   { background: rgba(245,158,11,0.1); }
 
   .card-title { font-size: 1rem; font-weight: 600; letter-spacing: 0.3px; }
-  .card-sub {
-    font-family: var(--mono);
-    font-size: 0.68rem;
-    color: var(--muted);
-    margin-top: 2px;
-  }
+  .card-sub { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
 
   .field { margin-bottom: 14px; }
   label {
-    display: block;
-    font-family: var(--mono);
-    font-size: 0.68rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 6px;
+    display: block; font-family: var(--mono); font-size: 0.68rem;
+    color: var(--muted); text-transform: uppercase;
+    letter-spacing: 1.5px; margin-bottom: 6px;
   }
   input {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 14px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 0.85rem;
-    outline: none;
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; color: var(--text);
+    font-family: var(--mono); font-size: 0.85rem; outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
   }
-  input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(0,245,180,0.08);
-  }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,245,180,0.08); }
   input::placeholder { color: var(--muted); }
 
   .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 22px;
-    border-radius: 10px;
-    border: none;
-    font-family: var(--sans);
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.2px;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 22px; border-radius: 10px; border: none;
+    font-family: var(--sans); font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.2px;
+    width: 100%; justify-content: center;
   }
-  .btn-primary {
-    background: linear-gradient(135deg, var(--accent), #00c490);
-    color: #060a10;
-    width: 100%;
-    justify-content: center;
-  }
-  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,245,180,0.25); }
-  .btn-primary:active { transform: translateY(0); }
-  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; filter: none !important; }
 
-  .btn-secondary {
-    background: linear-gradient(135deg, var(--accent2), #0070cc);
-    color: white;
-    width: 100%;
-    justify-content: center;
-  }
-  .btn-secondary:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,152,255,0.25); }
-  .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .btn-green  { background: linear-gradient(135deg, var(--accent), #00c490); color: #060a10; }
+  .btn-green:hover  { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,245,180,0.25); }
 
-  .btn-danger {
-    background: linear-gradient(135deg, var(--warn), #cc2244);
-    color: white;
-    width: 100%;
-    justify-content: center;
-  }
-  .btn-danger:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(255,77,109,0.25); }
-  .btn-danger:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .btn-blue   { background: linear-gradient(135deg, var(--accent2), #0070cc); color: white; }
+  .btn-blue:hover   { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,152,255,0.25); }
+
+  .btn-red    { background: linear-gradient(135deg, var(--warn), #cc2244); color: white; }
+  .btn-red:hover    { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(255,77,109,0.25); }
+
+  .btn-gold   { background: linear-gradient(135deg, var(--gold), #d97706); color: #060a10; }
+  .btn-gold:hover   { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(245,158,11,0.25); }
 
   .btn-connect {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 8px 18px;
-    font-size: 0.82rem;
-    border-radius: 8px;
-    transition: all 0.2s;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text); padding: 8px 18px; font-size: 0.82rem;
+    border-radius: 8px; width: auto;
   }
   .btn-connect:hover { border-color: var(--accent); color: var(--accent); }
   .btn-connect.connected { border-color: var(--accent); color: var(--accent); }
 
   .chain-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(0,152,255,0.1);
-    border: 1px solid rgba(0,152,255,0.2);
-    border-radius: 6px;
-    padding: 3px 10px;
-    font-family: var(--mono);
-    font-size: 0.68rem;
-    color: var(--accent2);
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(0,152,255,0.1); border: 1px solid rgba(0,152,255,0.2);
+    border-radius: 6px; padding: 3px 10px;
+    font-family: var(--mono); font-size: 0.68rem; color: var(--accent2);
   }
 
   .result-box {
-    margin-top: 14px;
-    padding: 14px;
-    border-radius: 10px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    font-family: var(--mono);
-    font-size: 0.85rem;
-    display: none;
+    margin-top: 14px; padding: 14px; border-radius: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    font-family: var(--mono); font-size: 0.85rem; display: none;
   }
-  .result-box.show { display: block; animation: fadeUp 0.3s ease; }
+  .result-box.show     { display: block; animation: fadeUp 0.3s ease; }
   .result-box.positive { border-color: rgba(0,245,180,0.3); color: var(--accent); }
   .result-box.negative { border-color: rgba(255,77,109,0.3); color: var(--warn); }
+  .result-box.gold     { border-color: rgba(245,158,11,0.3); color: var(--gold); }
 
-  .tx-link {
-    display: block;
-    margin-top: 10px;
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    color: var(--muted);
-    word-break: break-all;
-  }
+  .tx-link { display: block; margin-top: 10px; font-family: var(--mono); font-size: 0.7rem; color: var(--muted); word-break: break-all; }
   .tx-link a { color: var(--accent2); text-decoration: none; }
   .tx-link a:hover { text-decoration: underline; }
 
   #toast {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
+    position: fixed; bottom: 30px; left: 50%;
     transform: translateX(-50%) translateY(20px);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 24px;
-    font-family: var(--mono);
-    font-size: 0.82rem;
-    color: var(--text);
-    opacity: 0;
-    transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
-    pointer-events: none;
-    z-index: 100;
-    white-space: nowrap;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 24px;
+    font-family: var(--mono); font-size: 0.82rem; color: var(--text);
+    opacity: 0; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none; z-index: 100; white-space: nowrap;
   }
-  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  #toast.success { border-color: rgba(0,245,180,0.4); color: var(--accent); }
+  #toast.show    { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.success { border-color: rgba(0,245,180,0.4);  color: var(--accent); }
   #toast.error   { border-color: rgba(255,77,109,0.4); color: var(--warn); }
-  #toast.loading { border-color: rgba(0,152,255,0.4); color: var(--accent2); }
+  #toast.loading { border-color: rgba(0,152,255,0.4);  color: var(--accent2); }
 
   .spinner {
-    display: inline-block;
-    width: 14px; height: 14px;
+    display: inline-block; width: 14px; height: 14px;
     border: 2px solid rgba(255,255,255,0.2);
-    border-top-color: currentColor;
-    border-radius: 50%;
+    border-top-color: currentColor; border-radius: 50%;
     animation: spin 0.7s linear infinite;
   }
 
-  @keyframes fadeDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(20px);  } to { opacity:1; transform:translateY(0); } }
+  @keyframes pulse    { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+  @keyframes spin     { to { transform:rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -341,8 +222,7 @@
         <path d="M10 16H22M10 12H22M14 20H18" stroke="url(#g1)" stroke-width="1.5" stroke-linecap="round"/>
         <defs>
           <linearGradient id="g1" x1="4" y1="2" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-            <stop stop-color="#00f5b4"/>
-            <stop offset="1" stop-color="#0098ff"/>
+            <stop stop-color="#00f5b4"/><stop offset="1" stop-color="#0098ff"/>
           </linearGradient>
         </defs>
       </svg>
@@ -351,6 +231,7 @@
     <p>Trustless · On-chain · Permissionless</p>
   </header>
 
+  <!-- Wallet Bar -->
   <div class="wallet-bar">
     <div>
       <span class="dot" id="dot"></span>
@@ -362,12 +243,13 @@
     </div>
   </div>
 
+  <!-- 1. Add Expense -->
   <div class="card">
     <div class="card-header">
       <div class="card-icon green">💸</div>
       <div>
         <div class="card-title">Add Expense</div>
-        <div class="card-sub">Split ETH between participants</div>
+        <div class="card-sub">You paid — split the bill on-chain</div>
       </div>
     </div>
     <div class="field">
@@ -375,47 +257,78 @@
       <input id="participants" placeholder="0xAbc..., 0xDef...">
     </div>
     <div class="field">
-      <label>ETH Amount</label>
+      <label>Total ETH Amount You Paid</label>
       <input id="amount" type="number" step="0.0001" min="0" placeholder="0.01">
     </div>
-    <button class="btn btn-primary" onclick="addExpense()" id="addBtn">
+    <button class="btn btn-green" onclick="addExpense()" id="addBtn">
       <span>Add Expense</span>
     </button>
     <div class="tx-link" id="txLinkAdd"></div>
   </div>
 
+  <!-- 2. Check Balance -->
   <div class="card">
     <div class="card-header">
       <div class="card-icon blue">📊</div>
       <div>
         <div class="card-title">Check Balance</div>
-        <div class="card-sub">View owed or receivable ETH</div>
+        <div class="card-sub">See what you owe or can withdraw</div>
       </div>
     </div>
     <div class="field">
       <label>Wallet Address</label>
       <input id="userAddress" placeholder="0x...">
     </div>
-    <button class="btn btn-secondary" onclick="checkBalance()" id="balBtn">Check Balance</button>
+    <button class="btn btn-blue" onclick="checkBalance()" id="balBtn">Check Balance</button>
     <div class="result-box" id="balanceResult"></div>
   </div>
 
+  <!-- 3. Settle Payment -->
   <div class="card">
     <div class="card-header">
       <div class="card-icon red">⚡</div>
       <div>
         <div class="card-title">Settle Payment</div>
-        <div class="card-sub">Pay what you owe on-chain</div>
+        <div class="card-sub">Pay what you owe to the original payer</div>
       </div>
+    </div>
+    <div class="field">
+      <label>Creditor Address (person who paid)</label>
+      <input id="creditorAddress" placeholder="0x... (the person you owe)">
     </div>
     <div class="field">
       <label>ETH Amount to Pay</label>
       <input id="settleAmount" type="number" step="0.0001" min="0" placeholder="0.00">
     </div>
-    <button class="btn btn-danger" onclick="settle()" id="settleBtn">
+    <button class="btn btn-red" onclick="settle()" id="settleBtn">
       <span>Settle Now</span>
     </button>
     <div class="tx-link" id="txLinkSettle"></div>
+  </div>
+
+  <!-- 4. Withdraw -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon gold">💰</div>
+      <div>
+        <div class="card-title">Withdraw Your Money</div>
+        <div class="card-sub">Pull your ETH back to your wallet</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Check Withdrawable Balance First</label>
+      <input id="withdrawCheckAddr" placeholder="0x... (your address)">
+    </div>
+    <button class="btn btn-blue" onclick="checkWithdrawable()" id="checkWBtn" style="margin-bottom:12px;">
+      Check Withdrawable
+    </button>
+    <div class="result-box" id="withdrawResult"></div>
+    <div style="margin-top:14px;">
+      <button class="btn btn-gold" onclick="withdraw()" id="withdrawBtn">
+        <span>💰 Withdraw to My Wallet</span>
+      </button>
+    </div>
+    <div class="tx-link" id="txLinkWithdraw"></div>
   </div>
 
 </div>
@@ -423,15 +336,17 @@
 <div id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════
-//  CONTRACT CONFIG — already set for you!
-// ═══════════════════════════════════════════════
+// ════════════════════════════════════════════
+//  NEW CONTRACT — deployed with withdraw()
+// ════════════════════════════════════════════
 const CONTRACT_ADDRESS = "0xba36798932b3fd1fcafd60cbc539d19e8b85f7e2";
 
 const ABI = [
   "function addExpense(address[] memory participants) payable",
+  "function settle(address creditor) payable",
+  "function withdraw()",
   "function getBalance(address user) view returns (int)",
-  "function settle() payable"
+  "function getWithdrawable(address user) view returns (uint)"
 ];
 
 const EXPLORERS = {
@@ -442,11 +357,10 @@ const EXPLORERS = {
   80001:    "https://mumbai.polygonscan.com",
   8453:     "https://basescan.org"
 };
-
-// ═══════════════════════════════════════════════
+// ════════════════════════════════════════════
 
 let provider, signer, contract;
-window._chainId = 11155111; // default Sepolia
+window._chainId = 11155111;
 
 // ── Toast ──
 let toastTimer;
@@ -458,23 +372,15 @@ function toast(msg, type = "loading") {
   if (type !== "loading") toastTimer = setTimeout(() => el.className = "", 3500);
 }
 
-function explorerUrl(hash) {
-  const base = EXPLORERS[window._chainId] || "https://etherscan.io";
-  return `${base}/tx/${hash}`;
-}
-
 function txLink(elId, hash) {
-  const url = explorerUrl(hash);
+  const base = EXPLORERS[window._chainId] || "https://sepolia.etherscan.io";
   document.getElementById(elId).innerHTML =
-    `<a href="${url}" target="_blank" rel="noopener">↗ View on explorer: ${hash.slice(0,18)}...</a>`;
+    `<a href="${base}/tx/${hash}" target="_blank" rel="noopener">↗ View on Etherscan: ${hash.slice(0,18)}...</a>`;
 }
 
-// ── Kill ENS on provider ──
+// ── Kill ENS ──
 function patchENS(p) {
-  p.resolveName = async (name) => {
-    if (ethers.utils.isAddress(name)) return ethers.utils.getAddress(name);
-    throw new Error("ENS not supported — use a 0x address");
-  };
+  p.resolveName  = async (n) => { if (ethers.utils.isAddress(n)) return ethers.utils.getAddress(n); throw new Error("Use 0x address"); };
   p.lookupAddress = async () => null;
   p.getResolver   = async () => null;
   return p;
@@ -483,13 +389,10 @@ function patchENS(p) {
 // ── Connect Wallet ──
 async function connectWallet() {
   try {
-    if (!window.ethereum) {
-      toast("⚠ Install MetaMask first", "error"); return;
-    }
-    // "any" prevents ethers making assumptions about ENS support
+    if (!window.ethereum) { toast("⚠ Install MetaMask first", "error"); return; }
+
     provider = new ethers.providers.Web3Provider(window.ethereum, "any");
     patchENS(provider);
-
     await provider.send("eth_requestAccounts", []);
     signer = provider.getSigner();
     signer.resolveName = provider.resolveName;
@@ -502,17 +405,16 @@ async function connectWallet() {
     patchENS(contract.provider);
 
     const short = address.slice(0,6) + "..." + address.slice(-4);
-    const CHAIN_NAMES = { 1:"Ethereum", 5:"Goerli", 11155111:"Sepolia", 137:"Polygon", 80001:"Mumbai", 8453:"Base" };
+    const NAMES = { 1:"Ethereum", 5:"Goerli", 11155111:"Sepolia", 137:"Polygon", 80001:"Mumbai", 8453:"Base" };
 
     document.getElementById("wallet-info").textContent = short;
     document.getElementById("wallet-info").className = "connected";
     document.getElementById("dot").className = "dot live";
     document.getElementById("connectBtn").textContent = "Connected";
     document.getElementById("connectBtn").className = "btn btn-connect connected";
-    document.getElementById("chainBadge").textContent = "⬡ " + (CHAIN_NAMES[network.chainId] || `Chain ${network.chainId}`);
+    document.getElementById("chainBadge").textContent = "⬡ " + (NAMES[network.chainId] || `Chain ${network.chainId}`);
 
     toast("✓ Wallet connected", "success");
-
     window.ethereum.on("accountsChanged", () => location.reload());
     window.ethereum.on("chainChanged",    () => location.reload());
 
@@ -522,133 +424,165 @@ async function connectWallet() {
   }
 }
 
-// ── Guard ──
 function requireWallet() {
   if (!contract) { toast("⚠ Connect wallet first", "error"); return false; }
   return true;
 }
 
-// ── Add Expense ──
+function setBtn(id, loading, label) {
+  const b = document.getElementById(id);
+  b.innerHTML = loading ? `<span class="spinner"></span> Processing...` : label;
+  b.disabled  = loading;
+}
+
+// ── 1. Add Expense ──
 async function addExpense() {
   if (!requireWallet()) return;
-
   const raw    = document.getElementById("participants").value.trim();
   const amount = document.getElementById("amount").value.trim();
 
-  if (!raw)   return toast("⚠ Enter at least one address", "error");
-  if (!amount || parseFloat(amount) <= 0) return toast("⚠ Enter a valid ETH amount", "error");
+  if (!raw)   return toast("⚠ Enter participant addresses", "error");
+  if (!amount || parseFloat(amount) <= 0) return toast("⚠ Enter valid ETH amount", "error");
 
-  // Parse + checksum every address
   const addrs = raw.split(",").map(a => a.trim()).filter(Boolean);
   const checksummed = [];
   for (const a of addrs) {
-    if (!ethers.utils.isAddress(a)) {
-      toast(`✗ Bad address: ${a.slice(0,12)}...`, "error"); return;
-    }
+    if (!ethers.utils.isAddress(a)) { toast(`✗ Bad address: ${a.slice(0,12)}...`, "error"); return; }
     checksummed.push(ethers.utils.getAddress(a));
   }
 
-  const btn = document.getElementById("addBtn");
-  btn.innerHTML = `<span class="spinner"></span> Confirm in MetaMask...`;
-  btn.disabled = true;
-
+  setBtn("addBtn", true);
   try {
-    toast("⏳ Confirm in wallet...", "loading");
-
-    const tx = await contract.addExpense(checksummed, {
-      value: ethers.utils.parseEther(amount)
-    });
-
+    toast("⏳ Confirm in MetaMask...", "loading");
+    const tx = await contract.addExpense(checksummed, { value: ethers.utils.parseEther(amount) });
     toast("⏳ Mining...", "loading");
     const receipt = await tx.wait();
-
     txLink("txLinkAdd", receipt.transactionHash);
-    toast("✓ Expense added on-chain!", "success");
+    toast("✓ Expense added! Friends now owe you.", "success");
     document.getElementById("participants").value = "";
     document.getElementById("amount").value = "";
-
   } catch (err) {
     console.error(err);
     toast("✗ " + (err?.reason || err?.message || "Failed").slice(0, 60), "error");
   } finally {
-    btn.innerHTML = "<span>Add Expense</span>";
-    btn.disabled = false;
+    setBtn("addBtn", false, "<span>Add Expense</span>");
   }
 }
 
-// ── Check Balance ──
+// ── 2. Check Balance ──
 async function checkBalance() {
   if (!requireWallet()) return;
-
   const raw = document.getElementById("userAddress").value.trim();
-  if (!raw) return toast("⚠ Enter an address", "error");
-  if (!ethers.utils.isAddress(raw)) return toast("✗ Invalid address", "error");
+  if (!raw || !ethers.utils.isAddress(raw)) return toast("✗ Enter a valid address", "error");
 
-  const addr = ethers.utils.getAddress(raw); // checksum
+  const addr = ethers.utils.getAddress(raw);
   const box  = document.getElementById("balanceResult");
-  const btn  = document.getElementById("balBtn");
-
-  btn.innerHTML = `<span class="spinner"></span> Querying...`;
-  btn.disabled = true;
+  setBtn("balBtn", true);
 
   try {
     toast("⏳ Reading contract...", "loading");
-
-    const bal    = await contract.getBalance(addr);
-    // Signed int from Solidity — handle two's complement correctly
-    const isNeg  = bal.isNegative ? bal.isNegative() : bal.lt(0);
-    const absWei = isNeg ? bal.mul(-1) : bal;
-    const ethAmt = parseFloat(ethers.utils.formatEther(absWei));
+    const bal   = await contract.getBalance(addr);
+    const isNeg = bal.lt(0);
+    const abs   = isNeg ? bal.mul(-1) : bal;
+    const eth   = parseFloat(ethers.utils.formatEther(abs));
 
     box.className = `result-box show ${isNeg ? "negative" : "positive"}`;
-    box.innerHTML = isNeg
-      ? `💸 Owes: <strong>${ethAmt.toFixed(6)} ETH</strong>`
-      : `💰 Gets back: <strong>${ethAmt.toFixed(6)} ETH</strong>`;
-
+    box.innerHTML  = isNeg
+      ? `💸 Owes: <strong>${eth.toFixed(6)} ETH</strong>`
+      : `💰 Gets back: <strong>${eth.toFixed(6)} ETH</strong>`;
     document.getElementById("toast").className = "";
-
   } catch (err) {
-    console.error(err);
     box.className = "result-box show negative";
     box.textContent = "✗ Could not fetch balance";
     toast("✗ Query failed", "error");
   } finally {
-    btn.innerHTML = "Check Balance";
-    btn.disabled = false;
+    setBtn("balBtn", false, "Check Balance");
   }
 }
 
-// ── Settle ──
+// ── 3. Settle ──
 async function settle() {
   if (!requireWallet()) return;
+  const credRaw = document.getElementById("creditorAddress").value.trim();
+  const amt     = document.getElementById("settleAmount").value.trim();
 
-  const amt = document.getElementById("settleAmount").value.trim();
-  if (!amt || parseFloat(amt) <= 0) return toast("⚠ Enter a valid ETH amount", "error");
+  if (!credRaw || !ethers.utils.isAddress(credRaw)) return toast("✗ Enter valid creditor address", "error");
+  if (!amt || parseFloat(amt) <= 0) return toast("⚠ Enter valid ETH amount", "error");
 
-  const btn = document.getElementById("settleBtn");
-  btn.innerHTML = `<span class="spinner"></span> Confirm in MetaMask...`;
-  btn.disabled = true;
+  const creditor = ethers.utils.getAddress(credRaw);
+  setBtn("settleBtn", true);
 
   try {
-    toast("⏳ Confirm in wallet...", "loading");
-
-    const tx = await contract.settle({
-      value: ethers.utils.parseEther(amt)
-    });
-
+    toast("⏳ Confirm in MetaMask...", "loading");
+    const tx = await contract.settle(creditor, { value: ethers.utils.parseEther(amt) });
     toast("⏳ Mining...", "loading");
     const receipt = await tx.wait();
-
     txLink("txLinkSettle", receipt.transactionHash);
-    toast("✓ Payment settled!", "success");
+    toast("✓ Payment settled on-chain!", "success");
     document.getElementById("settleAmount").value = "";
-
+    document.getElementById("creditorAddress").value = "";
   } catch (err) {
     console.error(err);
     toast("✗ " + (err?.reason || err?.message || "Failed").slice(0, 60), "error");
   } finally {
-    btn.innerHTML = "<span>Settle Now</span>";
-    btn.disabled = false;
+    setBtn("settleBtn", false, "<span>Settle Now</span>");
+  }
+}
+
+// ── 4a. Check Withdrawable ──
+async function checkWithdrawable() {
+  if (!requireWallet()) return;
+  const raw = document.getElementById("withdrawCheckAddr").value.trim();
+  if (!raw || !ethers.utils.isAddress(raw)) return toast("✗ Enter a valid address", "error");
+
+  const addr = ethers.utils.getAddress(raw);
+  const box  = document.getElementById("withdrawResult");
+  setBtn("checkWBtn", true);
+
+  try {
+    toast("⏳ Reading contract...", "loading");
+    const amt = await contract.getWithdrawable(addr);
+    const eth = parseFloat(ethers.utils.formatEther(amt));
+
+    box.className = `result-box show ${eth > 0 ? "gold" : "positive"}`;
+    box.innerHTML  = eth > 0
+      ? `💰 Available to withdraw: <strong>${eth.toFixed(6)} ETH</strong>`
+      : `✓ Nothing to withdraw yet`;
+    document.getElementById("toast").className = "";
+  } catch (err) {
+    box.className = "result-box show negative";
+    box.textContent = "✗ Could not fetch withdrawable balance";
+    toast("✗ Query failed", "error");
+  } finally {
+    setBtn("checkWBtn", false, "Check Withdrawable");
+  }
+}
+
+// ── 4b. Withdraw ──
+async function withdraw() {
+  if (!requireWallet()) return;
+  setBtn("withdrawBtn", true);
+
+  try {
+    toast("⏳ Confirm in MetaMask...", "loading");
+    const tx = await contract.withdraw();
+    toast("⏳ Mining...", "loading");
+    const receipt = await tx.wait();
+    txLink("txLinkWithdraw", receipt.transactionHash);
+    toast("✓ ETH withdrawn to your wallet!", "success");
+
+    // Clear the result box
+    document.getElementById("withdrawResult").className = "result-box";
+  } catch (err) {
+    console.error(err);
+    const msg = err?.reason || err?.message || "Failed";
+    if (msg.includes("Nothing")) {
+      toast("⚠ Nothing to withdraw yet", "error");
+    } else {
+      toast("✗ " + msg.slice(0, 60), "error");
+    }
+  } finally {
+    setBtn("withdrawBtn", false, "<span>💰 Withdraw to My Wallet</span>");
   }
 }
 </script>
